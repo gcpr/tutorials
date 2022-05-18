@@ -59,7 +59,7 @@ mnist_infeed_queue = ipu.ipu_infeed_queue.IPUInfeedQueue(dataset)
 def training_loop_body(loss_running_total, x, y):
     logits = model(x, training=True)
     loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=logits)
-    train_op = tf.train.AdamOptimizer(0.01).minimize(loss=loss)
+    train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss=loss)
 
     # The running total calculation is now moved to the IPU
     return([loss_running_total + loss, train_op])
@@ -88,12 +88,16 @@ def train_one_epoch():
 
 # SNIPPET 5
 
+# Create a default configuration
 ipu_configuration = ipu.config.IPUConfig()
 
+# Select an IPU automatically
 ipu_configuration.auto_select_ipus = 1
 
+# Apply the configuration
 ipu_configuration.configure_ipu_system()
 
+# We build the operation within the scope of a particular device
 with ipu.scopes.ipu_scope('/device:IPU:0'):
     train_one_epoch_on_ipu = ipu.ipu_compiler.compile(train_one_epoch)
 

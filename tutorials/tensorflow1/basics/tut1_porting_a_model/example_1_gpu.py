@@ -4,12 +4,8 @@
 # SNIPPET 1
 
 import tensorflow.compat.v1 as tf
-
-# We'll be interested in performance later
 import time
 
-
-# SNIPPET 2
 
 # Specify hyperparameters for later use
 BATCHSIZE = 32
@@ -19,14 +15,13 @@ EPOCHS = 5
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (x_train, y_train), _ = fashion_mnist.load_data()
 
-# Cast and normalize the training data
+# Normalize and cast the data
 x_train = x_train.astype('float32') / 255
 y_train = y_train.astype('int32')
 
-# Build iterator over the data
+# Create and configure the dataset for iteration
 dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
 dataset = dataset.repeat().batch(BATCHSIZE, drop_remainder=True)
-dataset_iterator = dataset.make_initializable_iterator()
 
 # Define the layers to use in model
 
@@ -52,12 +47,17 @@ model = tf.keras.Sequential([expand_dims, conv, conv, flatten, final_dense])
 batches_per_epoch = len(x_train) // BATCHSIZE
 
 
+# SNIPPET 2
+
+dataset_iterator = dataset.make_initializable_iterator()
+
+# Get inputs from get_next() method of iterator
+(x, y) = dataset_iterator.get_next()
+
+
 # SNIPPET 3
 
-# SNIPPET 4
-
 def training_loop_body(x, y):
-
     logits = model(x, training=True)
     loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=logits)
     train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss=loss)
@@ -65,27 +65,26 @@ def training_loop_body(x, y):
     return([loss, train_op])
 
 
-# SNIPPET 5
-
-# Get inputs from get_next() method of iterator
-(x, y) = dataset_iterator.get_next()
+# SNIPPET 4
 
 # Computational graph defined here
 loss_op = training_loop_body(x, y)
 
 
-# SNIPPET 6
+# SNIPPET 5
 
 with tf.Session() as sess:
-
     sess.run(tf.global_variables_initializer())
+
+    # Initialize the dataset iterator
     sess.run(dataset_iterator.initializer)
 
     for i in range(EPOCHS):
 
-        loss_running_total = 0.0
-
         epoch_start_time = time.time()
+
+        # Inner loop
+        loss_running_total = 0.0
 
         for j in range(batches_per_epoch):
 
